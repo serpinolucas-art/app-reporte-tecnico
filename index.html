@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Samsung GSPN - Tech Report Pro v11.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Html5-Qrcode para escaneo de barras y códigos QR en tiempo real -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            samsung: {
+              blue: '#034EA2',
+              lightBlue: '#1428A0',
+              accent: '#2196F3',
+              darkBg: '#090A0F',
+              cardBg: '#12141C',
+              cardBorder: '#1E2235',
+              inputBg: '#161924',
+              formFocus: '#3B82F6'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Inter', sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+    }
+    body { 
+      background-color: #090A0F; 
+      color: #FFFFFF; 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+      overflow: hidden; 
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #1E2235; border-radius: 6px; }
+    
+    /* Animación para el micrófono de dictado */
+    .pulse-glow {
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+      animation: pulse-glow-anim 2s infinite alternate;
+    }
+    @keyframes pulse-glow-anim {
+      0% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.2); }
+      100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+    }
+    .wave-bar {
+      animation: wave-bounce 1s infinite ease-in-out alternate;
+    }
+    @keyframes wave-bounce {
+      0% { height: 4px; }
+      100% { height: 28px; }
+    }
+  </style>
+</head>
+<body class="bg-samsung-darkBg text-white flex flex-col h-screen overflow-hidden" id="app-body">
+
+  <!-- Header principal -->
+  <header class="bg-samsung-blue px-5 py-4 flex justify-between items-center shadow-xl shrink-0 border-b border-blue-900/60 relative z-20">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-white/10 rounded-xl">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-sm font-extrabold tracking-wider leading-none uppercase">SAMSUNG GSPN</h1>
+        <p class="text-[10px] text-blue-200 mt-0.5 font-medium">Diagnostic Pro & Digital Evidence Tool</p>
+      </div>
+    </div>
+    <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-[11px] px-3 py-1.5 rounded-full font-bold flex items-center gap-2 shadow-inner">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> Sistema Activo
+    </span>
+  </header>
+
+  <!-- Pestañas de Navegación -->
+  <nav class="flex bg-samsung-cardBg border-b border-samsung-cardBorder shrink-0 text-center shadow-lg relative z-10">
+    <button type="button" id="tab-btn-0" class="tab-btn flex-1 py-3.5 text-xs font-bold text-[#2196F3] border-b-2 border-[#2196F3] transition-all duration-300" onclick="switchTab(event, 0)">1. Equipo</button>
+    <button type="button" id="tab-btn-1" class="tab-btn flex-1 py-3.5 text-xs font-bold text-gray-400 border-b-2 border-transparent transition-all duration-300" onclick="switchTab(event, 1)">2. Falla</button>
+    <button type="button" id="tab-btn-2" class="tab-btn flex-1 py-3.5 text-xs font-bold text-gray-400 border-b-2 border-transparent transition-all duration-300" onclick="switchTab(event, 2)">3. Evidencia</button>
+    <button type="button" id="tab-btn-3" class="tab-btn flex-1 py-3.5 text-xs font-bold text-gray-400 border-b-2 border-transparent transition-all duration-300" onclick="switchTab(event, 3)">4. Resumen</button>
+  </nav>
+
+  <!-- Contenido principal -->
+  <main class="flex-1 overflow-y-auto p-4 max-w-xl w-full mx-auto pb-10">
+    
+    <!-- PASO 1: Datos del Equipo y Técnico -->
+    <div class="tab-content block" id="tab-0">
+      <div class="bg-samsung-cardBg rounded-2xl p-5 mb-5 shadow-2xl border border-samsung-cardBorder space-y-5">
+        
+        <!-- Información del Técnico y ASC -->
+        <div class="bg-[#161924]/80 rounded-xl p-4 border border-samsung-cardBorder/60 space-y-3.5">
+          <h3 class="text-xs font-extrabold text-[#2196F3] uppercase tracking-widest flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            Técnico & Orden de Servicio
+          </h3>
+          <div class="grid gap-3">
+            <input id="tech-name" placeholder="Nombre y Apellido del Técnico" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus focus:ring-1 focus:ring-samsung-formFocus transition duration-200">
+            <input id="tech-id" placeholder="Legajo / ID Técnico" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus focus:ring-1 focus:ring-samsung-formFocus transition duration-200">
+            <input id="tech-center" placeholder="Centro de Servicio Técnico (ASC)" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus focus:ring-1 focus:ring-samsung-formFocus transition duration-200">
+            <input id="so-number" placeholder="Número de Orden / Ticket GSPN" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus focus:ring-1 focus:ring-samsung-formFocus transition duration-200 font-mono">
+          </div>
+        </div>
+
+        <h2 class="text-base font-extrabold text-[#2196F3] border-b border-samsung-cardBorder/60 pb-2">1. Identificación del Producto</h2>
+        
+        <!-- Línea de producto -->
+        <div>
+          <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Línea de Producto:</label>
+          <select id="line-type" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white focus:outline-none focus:border-samsung-formFocus transition duration-200" onchange="updateChecklist()">
+            <option value="REF - Refrigeración (Heladeras / Freezers)">Heladeras / Refrigeración (REF)</option>
+            <option value="WM - Lavados (Lavarropas / Secarropas)">Lavarropas / Secarropas (WM)</option>
+            <option value="VD - Visual Display (Televisores / Monitores)">Televisores (VD)</option>
+            <option value="AC - Climatización (RAC / CAC)">Aire Acondicionado (RAC / CAC)</option>
+            <option value="MWO - Cocción / Microondas">Microondas / Cocción (MWO)</option>
+            <option value="OVEN - Hornos Eléctricos">Hornos Eléctricos (OVEN)</option>
+            <option value="MONITOR - Monitores">Monitores (MONITOR)</option>
+            <option value="AUDIO - Dispositivos de Audio / Torres / Barras">Audio / Barras de Sonido (AUDIO)</option>
+            <option value="PROJECTOR - Proyectores">Proyectores (PROJECTOR)</option>
+            <option value="COOKTOP - Anafes / Cocción">Anafes / Cooktops (COOKTOP)</option>
+          </select>
+        </div>
+
+        <!-- Escáner de Modelo -->
+        <div>
+          <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Modelo de Equipo:</label>
+          <div class="flex gap-2">
+            <input type="text" id="model" placeholder="Ej: RT38K5932SL" class="flex-1 p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus focus:ring-1 focus:ring-samsung-formFocus transition duration-200 font-mono">
+            <button type="button" onclick="openScanner('model')" class="px-3.5 bg-samsung-blue hover:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-blue-900/30">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+              Escáner
+            </button>
+          </div>
+        </div>
+
+        <!-- Escáner de Serie -->
+        <div>
+          <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Número de Serie (S/N):</label>
+          <div class="flex gap-2">
+            <input type="text" id="serial" placeholder="Ej: 07XX3CZT100000X" class="flex-1 p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus focus:ring-1 focus:ring-samsung-formFocus transition duration-200 font-mono">
+            <button type="button" onclick="openScanner('serial')" class="px-3.5 bg-samsung-blue hover:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-blue-900/30">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+              Escáner
+            </button>
+          </div>
+        </div>
+
+        <!-- Estado de la Garantía -->
+        <div>
+          <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Estado de Garantía:</label>
+          <select id="warranty" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white focus:outline-none focus:border-samsung-formFocus transition duration-200">
+            <option value="En Garantía (OW)">En Garantía (OW)</option>
+            <option value="Fuera de Garantía (OOW)">Fuera de Garantía (OOW)</option>
+            <option value="Garantía Extendida / Aseguradora">Garantía Extendida / Aseguradora</option>
+          </select>
+        </div>
+
+        <!-- Observaciones de ingreso por micrófono -->
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Observaciones de Ingreso:</label>
+            <button type="button" onclick="startDictation('tech-notes')" class="text-[#2196F3] hover:text-blue-400 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 px-2 py-1 rounded bg-[#2196F3]/5 border border-[#2196F3]/10">
+              <span class="w-2 h-2 rounded-full bg-[#2196F3] animate-pulse"></span>
+              🎤 Dictar por Voz
+            </button>
+          </div>
+          <textarea id="tech-notes" rows="2" placeholder="Describa el estado cosmético o notas iniciales..." class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus transition duration-200"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 2: Diagnóstico y Falla -->
+    <div class="tab-content hidden" id="tab-1">
+      <div class="bg-samsung-cardBg rounded-2xl p-5 mb-5 shadow-2xl border border-samsung-cardBorder space-y-5">
+        <h2 class="text-base font-extrabold text-[#2196F3] border-b border-samsung-cardBorder/60 pb-2">2. Falla & Árbol de Diagnóstico</h2>
+
+        <!-- Síntoma reportado -->
+        <div>
+          <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Síntoma Reportado:</label>
+          <select id="symptom-category" onchange="toggleManualInput('symptom-category', 'symptom-manual-container')" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white focus:outline-none focus:border-samsung-formFocus transition duration-200">
+            <!-- Cargado dinámicamente por JS -->
+          </select>
+          <div id="symptom-manual-container" class="mt-2 hidden">
+            <input type="text" id="symptom-manual" placeholder="Escriba el síntoma detallado..." class="w-full p-3 border border-[#034EA2]/60 rounded-xl text-sm bg-samsung-inputBg text-white focus:outline-none focus:border-[#2196F3] transition duration-200">
+          </div>
+        </div>
+
+        <!-- Defecto técnico -->
+        <div>
+          <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Diagnóstico / Defecto Técnico:</label>
+          <select id="defect-category" onchange="toggleManualInput('defect-category', 'defect-manual-container')" class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white focus:outline-none focus:border-samsung-formFocus transition duration-200">
+            <!-- Cargado dinámicamente por JS -->
+          </select>
+          <div id="defect-manual-container" class="mt-2 hidden">
+            <input type="text" id="defect-manual" placeholder="Escriba el defecto técnico..." class="w-full p-3 border border-[#034EA2]/60 rounded-xl text-sm bg-samsung-inputBg text-white focus:outline-none focus:border-[#2196F3] transition duration-200">
+          </div>
+        </div>
+
+        <!-- Checklist dinámico de mediciones -->
+        <div class="space-y-2">
+          <label class="block text-[11px] font-bold text-[#2196F3] uppercase tracking-wider">Checklist de Mediciones (Por Línea de Producto):</label>
+          <div id="dynamic-checklist" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-[#161924] p-3.5 rounded-xl border border-samsung-cardBorder/60">
+            <!-- Cargado por JavaScript -->
+          </div>
+        </div>
+
+        <!-- Panel de Intervención en Circuito de Refrigeración (Solo para REF o AC) -->
+        <div id="frigo-intervention-panel" class="hidden bg-[#161924]/80 p-4 rounded-xl border border-samsung-cardBorder/60 space-y-4">
+          <div class="flex justify-between items-center border-b border-samsung-cardBorder pb-2">
+            <span class="block text-xs font-extrabold text-[#2196F3] uppercase tracking-widest flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              Intervención en Circuito de Refrigeración
+            </span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <span class="text-[10px] font-bold uppercase text-gray-400">¿Intervención de circuito?</span>
+              <input type="checkbox" id="frigo-active" onchange="toggleFrigoPanel()" class="rounded bg-black border-[#222533] w-4.5 h-4.5 text-[#034EA2]">
+            </label>
+          </div>
+
+          <div id="frigo-content" class="hidden space-y-4">
+            <!-- 1. Trabajos Realizados -->
+            <div class="space-y-1.5">
+              <span class="block text-[10px] font-bold text-gray-400 uppercase">1. Trabajos Realizados:</span>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <label class="flex items-center space-x-2 p-2 rounded-lg bg-samsung-inputBg border border-samsung-cardBorder cursor-pointer">
+                  <input type="checkbox" id="frigo_work_filter" class="rounded text-[#034EA2]">
+                  <span>Cambio de Filtro Dryer</span>
+                </label>
+                <label class="flex items-center space-x-2 p-2 rounded-lg bg-samsung-inputBg border border-samsung-cardBorder cursor-pointer">
+                  <input type="checkbox" id="frigo_work_fuga" class="rounded text-[#034EA2]">
+                  <span>Reparación de Fuga</span>
+                </label>
+                <label class="flex items-center space-x-2 p-2 rounded-lg bg-samsung-inputBg border border-samsung-cardBorder cursor-pointer col-span-2">
+                  <input type="checkbox" id="frigo_work_compresor" onchange="toggleCompresorDetails()" class="rounded text-[#034EA2]">
+                  <span>Cambio de Compresor</span>
+                </label>
+                <label class="flex items-center space-x-2 p-2 rounded-lg bg-samsung-inputBg border border-samsung-cardBorder cursor-pointer col-span-2">
+                  <input type="checkbox" id="frigo_work_otro" onchange="toggleFrigoOtro()" class="rounded text-[#034EA2]">
+                  <span>Otro</span>
+                </label>
+              </div>
+              <div id="frigo-work-otro-container" class="hidden mt-2">
+                <input type="text" id="frigo_work_otro_text" placeholder="Especifique otro trabajo..." class="w-full p-2 border border-[#222533] rounded text-xs bg-samsung-inputBg text-white">
+              </div>
+            </div>
+
+            <!-- 2. Presurización -->
+            <div class="bg-[#12141C] p-3 rounded-lg border border-samsung-cardBorder space-y-2">
+              <span class="block text-[10px] font-bold text-[#2196F3] uppercase">2. Presurización con Nitrógeno:</span>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[9px] text-gray-400 uppercase">Presión de Prueba (PSI):</label>
+                  <input type="number" id="frigo_nitrogeno_psi" placeholder="Ej: 150" class="w-full p-2 border border-samsung-cardBorder rounded text-xs bg-samsung-inputBg text-white font-mono">
+                </div>
+                <div>
+                  <label class="block text-[9px] text-gray-400 uppercase">Tiempo de Prueba (Minutos):</label>
+                  <input type="number" id="frigo_nitrogeno_min" placeholder="Ej: 20" class="w-full p-2 border border-samsung-cardBorder rounded text-xs bg-samsung-inputBg text-white font-mono">
+                </div>
+              </div>
+              <div class="flex justify-between items-center text-xs pt-1">
+                <span>¿Circuito Estanco (Sin fugas)?</span>
+                <select id="frigo_nitrogeno_estanco" class="p-1.5 border border-samsung-cardBorder rounded bg-samsung-inputBg text-white text-xs">
+                  <option value="Sí">SÍ (OK)</option>
+                  <option value="No">NO</option>
+                </select>
+              </div>
+              <label class="w-full py-2 bg-samsung-blue hover:bg-blue-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 mt-1 transition active:scale-95 cursor-pointer">
+                📷 Tomar Foto Manómetro
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event, 'container-manometro')">
+              </label>
+              <div id="container-manometro" class="grid grid-cols-3 gap-2 mt-1"></div>
+            </div>
+
+            <!-- 3. Proceso de Vacío -->
+            <div class="bg-[#12141C] p-3 rounded-lg border border-samsung-cardBorder space-y-2">
+              <span class="block text-[10px] font-bold text-[#2196F3] uppercase">3. Proceso de Vacío de Circuito:</span>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[9px] text-gray-400 uppercase">Vacío Final (Micrones):</label>
+                  <input type="number" id="frigo_vacio_micrones" placeholder="Ej: 450" class="w-full p-2 border border-samsung-cardBorder rounded text-xs bg-samsung-inputBg text-white font-mono">
+                </div>
+                <div>
+                  <label class="block text-[9px] text-gray-400 uppercase">Tiempo de Vacío (Minutos):</label>
+                  <input type="number" id="frigo_vacio_min" placeholder="Ej: 30" class="w-full p-2 border border-samsung-cardBorder rounded text-xs bg-samsung-inputBg text-white font-mono">
+                </div>
+              </div>
+              <label class="w-full py-2 bg-samsung-blue hover:bg-blue-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 mt-1 transition active:scale-95 cursor-pointer">
+                📷 Tomar Foto Vacuómetro
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event, 'container-vacuometro')">
+              </label>
+              <div id="container-vacuometro" class="grid grid-cols-3 gap-2 mt-1"></div>
+            </div>
+
+            <!-- 4. Carga de Gas -->
+            <div class="bg-[#12141C] p-3 rounded-lg border border-samsung-cardBorder space-y-2">
+              <span class="block text-[10px] font-bold text-[#2196F3] uppercase">4. Carga de Refrigerante:</span>
+              <div class="flex justify-between items-center gap-2">
+                <div class="flex-1">
+                  <label class="block text-[9px] text-gray-400 uppercase">Tipo de Gas:</label>
+                  <select id="frigo_gas_tipo" class="w-full p-2 border border-samsung-cardBorder rounded text-xs bg-samsung-inputBg text-white">
+                    <option value="R600a">R600a</option>
+                    <option value="R134a">R134a</option>
+                    <option value="R410A">R410A</option>
+                    <option value="R32">R32</option>
+                  </select>
+                </div>
+                <div class="flex-1">
+                  <label class="block text-[9px] text-gray-400 uppercase">Carga Exacta (Gramos):</label>
+                  <input type="number" id="frigo_gas_gramos" placeholder="Ej: 45" class="w-full p-2 border border-samsung-cardBorder rounded text-xs bg-samsung-inputBg text-white font-mono">
+                </div>
+              </div>
+              <div class="flex justify-between items-center text-xs pt-1">
+                <span>¿Se realizó carga usando Balanza?</span>
+                <select id="frigo_gas_balanza" class="p-1.5 border border-samsung-cardBorder rounded bg-samsung-inputBg text-white text-xs">
+                  <option value="Sí">SÍ (OK)</option>
+                  <option value="No">NO</option>
+                </select>
+              </div>
+              <label class="w-full py-2 bg-samsung-blue hover:bg-blue-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 mt-1 transition active:scale-95 cursor-pointer">
+                📷 Tomar Foto Balanza / Peso
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event, 'container-balanza')">
+              </label>
+              <div id="container-balanza" class="grid grid-cols-3 gap-2 mt-1"></div>
+            </div>
+
+            <!-- 5. Diagnóstico Compresor -->
+            <div id="frigo-compresor-container" class="hidden bg-[#12141C] p-3 rounded-lg border border-samsung-cardBorder space-y-2">
+              <span class="block text-[10px] font-bold text-red-400 uppercase">5. Justificación de Cambio de Compresor:</span>
+              <div>
+                <label class="block text-[9px] text-gray-400 uppercase">Causa del reemplazo:</label>
+                <select id="frigo_compresor_causa" class="w-full p-2 border border-samsung-cardBorder rounded text-xs bg-samsung-inputBg text-white">
+                  <option value="Quemado / En Corto">Bobinado Quemado / En Corto / A Masa</option>
+                  <option value="Mecánicamente Clavado">Compresor Mecánicamente Clavado</option>
+                  <option value="Ruidoso / Descomprimido">Válvulas descomprimidas / Ruidoso</option>
+                  <option value="Aceite Contaminado">Aceite altamente contaminado / ácido</option>
+                </select>
+              </div>
+              <label class="w-full py-2 bg-samsung-blue hover:bg-blue-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 mt-1 transition active:scale-95 cursor-pointer">
+                📷 Tomar Foto Compresor Viejo/Nuevo
+                <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleImageUpload(event, 'container-compresores')">
+              </label>
+              <div id="container-compresores" class="grid grid-cols-3 gap-2 mt-1"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Metodología de Diagnóstico -->
+        <div class="bg-[#161924]/80 p-4 rounded-xl border border-samsung-cardBorder/60 space-y-4">
+          <span class="block text-xs font-extrabold text-[#2196F3] uppercase tracking-widest flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+            Lógica y Metodología de Diagnóstico
+          </span>
+          
+          <div class="space-y-1">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase">1. Comprobación del síntoma en campo:</label>
+            <select id="diag-symptom-check" class="w-full p-2.5 border border-samsung-cardBorder rounded-lg text-xs bg-samsung-inputBg text-white focus:outline-none">
+              <option value="Replicado">Se logró replicar el síntoma del cliente</option>
+              <option value="No Replicado">No se replicó el síntoma (Funcionamiento correcto)</option>
+              <option value="Intermitente">Falla intermitente (Requiere monitoreo continuo)</option>
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase">2. Método de prueba principal:</label>
+            <select id="diag-test-type" class="w-full p-2.5 border border-samsung-cardBorder rounded-lg text-xs bg-samsung-inputBg text-white focus:outline-none">
+              <!-- Cargado dinámicamente por JS -->
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-[10px] font-bold text-gray-400 uppercase">3. Medición / Evidencia registrada:</label>
+            <input type="text" id="diag-evidence" placeholder="Ej: Bobinado compresor abierto (Infinito), 0V en placa..." class="w-full p-2.5 border border-samsung-cardBorder rounded-lg text-xs bg-samsung-inputBg text-white focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Informe de trabajo detallado por voz -->
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Informe Técnico del Trabajo Realizado:</label>
+            <button type="button" onclick="startDictation('symptom-desc')" class="text-[#2196F3] hover:text-blue-400 text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 px-2 py-1 rounded bg-[#2196F3]/5 border border-[#2196F3]/10">
+              <span class="w-2 h-2 rounded-full bg-[#2196F3] animate-pulse"></span>
+              🎤 Dictar por Voz
+            </button>
+          </div>
+          <textarea id="symptom-desc" rows="4" placeholder="Describa el trabajo técnico correctivo aplicado..." class="w-full p-3 border border-samsung-cardBorder rounded-xl text-sm bg-samsung-inputBg text-white placeholder-gray-500 focus:outline-none focus:border-samsung-formFocus transition duration-200"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 3: Fotos y Captura en Vivo -->
+    <div class="tab-content hidden" id="tab-2">
+      <div class="bg-samsung-cardBg rounded-2xl p-5 mb-5 shadow-2xl border border-samsung-cardBorder space-y-4">
+        <h2 class="text-base font-extrabold text-[#2196F3] border-b border-samsung-cardBorder/60 pb-2">3. Evidencia Fotográfica</h2>
+
+        <!-- Sección 1 fotos -->
+        <div class="bg-[#161924]/70 p-4 rounded-xl border border-samsung-cardBorder/60 space-y-3">
+          <span class="block text-xs font-bold text-gray-300 uppercase tracking-wider">1. Placa de Serie / Síntoma Inicial</span>
+          <div class="flex gap-2">
+            <button type="button" onclick="openCameraModal('container-symptom')" class="flex-1 py-3 bg-[#034EA2] hover:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg">
+              📸 Cámara en Vivo
+            </button>
+            <button type="button" onclick="triggerFileSelector('container-symptom')" class="flex-1 py-3 bg-[#1E2235] hover:bg-gray-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition border border-samsung-cardBorder">
+              📁 Subir Archivo
+            </button>
+          </div>
+          <div id="container-symptom" class="grid grid-cols-3 gap-2 mt-2"></div>
+        </div>
+
+        <!-- Sección 2 fotos -->
+        <div class="bg-[#161924]/70 p-4 rounded-xl border border-samsung-cardBorder/60 space-y-3">
+          <span class="block text-xs font-bold text-gray-300 uppercase tracking-wider">2. Mediciones / Desarme y Diagnóstico</span>
+          <div class="flex gap-2">
+            <button type="button" onclick="openCameraModal('container-testing')" class="flex-1 py-3 bg-[#034EA2] hover:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg">
+              📸 Cámara en Vivo
+            </button>
+            <button type="button" onclick="triggerFileSelector('container-testing')" class="flex-1 py-3 bg-[#1E2235] hover:bg-gray-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition border border-samsung-cardBorder">
+              📁 Subir Archivo
+            </button>
+          </div>
+          <div id="container-testing" class="grid grid-cols-3 gap-2 mt-2"></div>
+        </div>
+
+        <!-- Sección 3 fotos -->
+        <div class="bg-[#161924]/70 p-4 rounded-xl border border-samsung-cardBorder/60 space-y-3">
+          <span class="block text-xs font-bold text-gray-300 uppercase tracking-wider">3. Trabajo Concluido / Producto Reparado</span>
+          <div class="flex gap-2">
+            <button type="button" onclick="openCameraModal('container-final')" class="flex-1 py-3 bg-[#034EA2] hover:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition shadow-lg">
+              📸 Cámara en Vivo
+            </button>
+            <button type="button" onclick="triggerFileSelector('container-final')" class="flex-1 py-3 bg-[#1E2235] hover:bg-gray-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition border border-samsung-cardBorder">
+              📁 Subir Archivo
+            </button>
+          </div>
+          <div id="container-final" class="grid grid-cols-3 gap-2 mt-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 4: Resumen, Firmas y PDFs -->
+    <div class="tab-content hidden" id="tab-3">
+      <div class="bg-samsung-cardBg rounded-2xl p-5 mb-5 shadow-2xl border border-samsung-cardBorder space-y-4">
+        <h2 class="text-base font-extrabold text-[#2196F3] border-b border-samsung-cardBorder/60 pb-2">4. Previsualización del Informe GSPN</h2>
+        <div id="summary-content" class="space-y-4 text-xs text-gray-200 divide-y divide-[#1E2235]"></div>
+        
+        <div class="pt-4 border-t border-[#1E2235]">
+          <h3 class="text-xs font-extrabold text-[#2196F3] uppercase tracking-wider mb-2">Imágenes a Exportar:</h3>
+          <div id="pdf-images-container" class="grid grid-cols-3 gap-2"></div>
+        </div>
+
+        <!-- Firmas en pantalla táctil -->
+        <div class="bg-[#161924] p-4 rounded-xl border border-samsung-cardBorder space-y-4 mt-4">
+          <span class="block text-xs font-extrabold text-[#2196F3] uppercase tracking-widest">Firmas Digitales de Conformidad</span>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Firma Técnico -->
+            <div class="space-y-1">
+              <span class="block text-[10px] text-gray-400 uppercase font-bold">Firma del Técnico</span>
+              <div class="border border-[#1E2235] rounded-xl bg-white relative overflow-hidden" style="height: 100px;">
+                <canvas id="tech-sig-canvas" class="w-full h-full cursor-crosshair block" style="touch-action: none;"></canvas>
+                <button type="button" onclick="clearSignature('tech-sig-canvas')" class="absolute top-1.5 right-1.5 bg-red-600/90 hover:bg-red-600 text-white text-[9px] px-2 py-0.5 rounded-lg font-bold shadow transition">Borrar</button>
+              </div>
+            </div>
+
+            <!-- Firma Cliente -->
+            <div class="space-y-1">
+              <span class="block text-[10px] text-gray-400 uppercase font-bold">Firma de Conformidad Cliente</span>
+              <div class="border border-[#1E2235] rounded-xl bg-white relative overflow-hidden" style="height: 100px;">
+                <canvas id="client-sig-canvas" class="w-full h-full cursor-crosshair block" style="touch-action: none;"></canvas>
+                <button type="button" onclick="clearSignature('client-sig-canvas')" class="absolute top-1.5 right-1.5 bg-red-600/90 hover:bg-red-600 text-white text-[9px] px-2 py-0.5 rounded-lg font-bold shadow transition">Borrar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <button type="button" class="py-4 bg-[#034EA2] hover:bg-blue-600 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-95 transition flex items-center justify-center gap-2" onclick="generateAndExportPDF('internal')">
+          <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          1. Reporte GSPN (Interno)
+        </button>
+        <button type="button" class="py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-lg active:scale-95 transition flex items-center justify-center gap-2" onclick="generateAndExportPDF('customer')">
+          <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          2. Constancia Cliente (Entregar)
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL: Escáner de Códigos de Barra (html5-qrcode) -->
+  <div id="scanner-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
+    <div class="bg-samsung-cardBg border border-samsung-cardBorder rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-samsung-cardBorder flex justify-between items-center bg-[#161924]">
+        <h3 class="text-sm font-bold text-[#2196F3] uppercase tracking-wider">Escanear Código de Barras</h3>
+        <button onclick="closeScanner()" class="text-gray-400 hover:text-white text-xl font-bold">×</button>
+      </div>
+      <div class="p-4 flex flex-col items-center">
+        <div id="interactive-reader" class="w-full aspect-video bg-black rounded-xl overflow-hidden border border-samsung-cardBorder relative">
+          <!-- El video de la cámara se cargará aquí -->
+        </div>
+        <p class="text-[11px] text-gray-400 mt-3 text-center">Apunte al código de barras en la etiqueta metálica del equipo. Manténgalo centrado.</p>
+      </div>
+      <div class="px-5 py-4 bg-[#161924] border-t border-samsung-cardBorder flex justify-between items-center gap-2">
+        <label class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-4 py-2.5 rounded-lg cursor-pointer font-bold active:scale-95 transition">
+          📂 Elegir Imagen
+          <input type="file" accept="image/*" class="hidden" onchange="scanFromUploadedFile(event)">
+        </label>
+        <button onclick="closeScanner()" class="bg-red-600 hover:bg-red-500 text-white text-xs px-4 py-2.5 rounded-lg font-bold active:scale-95 transition">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Cámara en vivo integrada para evidencias WebRTC -->
+  <div id="camera-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
+    <div class="bg-samsung-cardBg border border-samsung-cardBorder rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col">
+      <div class="px-5 py-4 border-b border-samsung-cardBorder flex justify-between items-center bg-[#161924]">
+        <h3 class="text-sm font-bold text-[#2196F3] uppercase tracking-wider">Cámara de Evidencias</h3>
+        <button onclick="closeCameraModal()" class="text-gray-400 hover:text-white text-xl font-bold">×</button>
+      </div>
+      <div class="p-4 flex flex-col items-center">
+        <div class="w-full aspect-square bg-black rounded-xl overflow-hidden border border-samsung-cardBorder relative">
+          <video id="camera-stream" class="w-full h-full object-cover" autoplay playsinline muted></video>
+          <!-- Guía para encuadre -->
+          <div class="absolute inset-5 border-2 border-dashed border-[#2196F3]/40 rounded-xl pointer-events-none flex items-center justify-center">
+            <span class="text-[10px] text-white/30 uppercase tracking-widest">Encuadrar detalle técnico</span>
+          </div>
+        </div>
+      </div>
+      <div class="px-5 py-4 bg-[#161924] border-t border-samsung-cardBorder flex justify-between gap-2">
+        <button onclick="closeCameraModal()" class="bg-gray-800 hover:bg-gray-700 text-white text-xs px-4 py-2.5 rounded-lg font-bold active:scale-95 transition">Cerrar</button>
+        <button onclick="takeSnapshot()" class="bg-[#034EA2] hover:bg-blue-600 text-white text-xs px-6 py-2.5 rounded-lg font-bold flex items-center gap-1.5 shadow-lg active:scale-95 transition">
+          📷 Capturar Evidencia
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Dictado de Voz y Reconocimiento -->
+  <div id="dictation-overlay" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
+    <div class="bg-samsung-cardBg border border-samsung-cardBorder rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl space-y-6 relative">
+      <span class="text-xs font-extrabold text-[#2196F3] uppercase tracking-widest">Dictado Inteligente GSPN</span>
+      
+      <!-- Efecto visual de ondas de sonido -->
+      <div class="flex items-center justify-center gap-1 h-12">
+        <div class="w-1.5 bg-[#2196F3] rounded-full wave-bar" style="animation-delay: 0.1s"></div>
+        <div class="w-1.5 bg-[#2196F3] rounded-full wave-bar" style="animation-delay: 0.3s"></div>
+        <div class="w-1.5 bg-[#2196F3] rounded-full wave-bar" style="animation-delay: 0.5s"></div>
+        <div class="w-1.5 bg-[#2196F3] rounded-full wave-bar" style="animation-delay: 0.2s"></div>
+        <div class="w-1.5 bg-[#2196F3] rounded-full wave-bar" style="animation-delay: 0.4s"></div>
+      </div>
+
+      <div class="space-y-1.5">
+        <h4 class="text-white font-extrabold text-base">Escuchando...</h4>
+        <p class="text-[11px] text-gray-400">Hable claro. El transcriptor guardará automáticamente su comentario en el campo de texto.</p>
+      </div>
+
+      <!-- Cuadro de texto de previsualización en vivo -->
+      <div class="bg-[#090A0F]/60 border border-samsung-cardBorder rounded-xl p-3.5 text-xs text-left text-gray-300 min-h-[70px] max-h-[110px] overflow-y-auto italic font-medium" id="dictation-preview">
+        "Comience a hablar..."
+      </div>
+
+      <button onclick="stopDictation()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl active:scale-95 transition shadow-lg">
+        🛑 Detener Transcripción
+      </button>
+    </div>
+  </div>
+
+
+  <!-- LOGICA Y FUNCIONES DE JAVASCRIPT -->
+  <script>
+    let currentTab = 0;
+    
+    // Estados del escáner de barras
+    let html5QrcodeScanner = null;
+    let scannerTargetId = null;
+
+    // Estados de la cámara WebRTC
+    let cameraMediaStream = null;
+    let cameraTargetContainerId = null;
+
+    // Estados del reconocimiento de voz
+    let recognitionInstance = null;
+    let activeDictationTargetId = null;
+
+    // BASE DE DATOS DE CHECKLISTS DETALLADOS POR LÍNEA DE PRODUCTO
+    const checklists = {
+      'REF - Refrigeración (Heladeras / Freezers)': [
+        { id: 'chk_ref_inst', label: 'Condiciones e Instalación de Lugar de heladera Ok' },
+        { id: 'chk_ref_tension', label: 'Tensión de Alimentación Correcta (220V)' },
+        { id: 'chk_ref_tierra', label: 'Puesta a Tierra Ok' },
+        { id: 'chk_ref_compresor', label: 'Consumo Compresor (Amperaje) Ok' },
+        { id: 'chk_ref_disp_pres', label: 'Presión de agua para Dispenser automática Ok' },
+        { id: 'chk_ref_disp_test', label: 'Prueba de Dispensador de agua/hielo Ok' },
+        { id: 'chk_ref_freezer', label: 'Freezer enfría correctamente' },
+        { id: 'chk_ref_gabinete', label: 'Heladera / Refrigerador enfría correctamente' },
+        { id: 'chk_ref_ruido', label: 'Nivel de ruidos y vibración normal' },
+        { id: 'chk_ref_deshielo', label: 'Resistencia de deshielo Ok' },
+        { id: 'chk_ref_sensores', label: 'Sensores de temperatura Ok' },
+        { id: 'chk_ref_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'WM - Lavados (Lavarropas / Secarropas)': [
+        { id: 'chk_wm_tension', label: 'Tensión de Red Correcta (220V)' },
+        { id: 'chk_wm_tierra', label: 'Puesta a Tierra Ok' },
+        { id: 'chk_wm_nivel', label: 'Nivelación / Amortiguadores' },
+        { id: 'chk_wm_valvulas', label: 'Presión de Agua y Electroválvulas' },
+        { id: 'chk_wm_bomba', label: 'Bomba de Desagote y Filtro Limpio' },
+        { id: 'chk_wm_puerta', label: 'Bloqueapuertas y Traba Seguridad' },
+        { id: 'chk_wm_motor', label: 'Giro Motor y Embrague / Acople' },
+        { id: 'chk_wm_prueba', label: 'Prueba funcional completa del producto' },
+        { id: 'chk_wm_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'VD - Visual Display (Televisores / Monitores)': [
+        { id: 'chk_vd_tension', label: 'Tensión de Red Correcta (220V)' },
+        { id: 'chk_vd_tierra', label: 'Puesta a Tierra Ok' },
+        { id: 'chk_vd_visual', label: 'Inspección Visual Panel (Sin Fisuras)' },
+        { id: 'chk_vd_backlight', label: 'Retroiluminación LED (Backlight)' },
+        { id: 'chk_vd_fuente', label: 'Voltajes de Fuente (Standby/13V)' },
+        { id: 'chk_vd_hdmi', label: 'Entradas de Señal (HDMI / Sintonía)' },
+        { id: 'chk_vd_smart', label: 'Conexión Wi-Fi / Smart Hub Ok' },
+        { id: 'chk_vd_mura', label: 'Pantalla libre de efecto mura, fugas de luz, manchas o pixeles' },
+        { id: 'chk_vd_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'AC - Climatización (RAC / CAC)': [
+        { id: 'chk_ac_inst', label: 'Calidad de Instalación Ok (Cañería >=3m, sin estrangular)' },
+        { id: 'chk_ac_tension', label: 'Tensión de Red Correcta (220V)' },
+        { id: 'chk_ac_tierra', label: 'Puesta a Tierra Ok' },
+        { id: 'chk_ac_presion', label: 'Presión Refrigerante (R410/R32)' },
+        { id: 'chk_ac_consumo', label: 'Consumo Eléctrico Compresor (A)' },
+        { id: 'chk_ac_filtros', label: 'Filtros y Turbina de Evaporador' },
+        { id: 'chk_ac_desague', label: 'Desagüe / Drenaje de Condensado' },
+        { id: 'chk_ac_valvula', label: 'Válvula Inversora (Frío/Calor)' },
+        { id: 'chk_ac_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'MWO - Cocción / Microondas': [
+        { id: 'chk_mwo_tension', label: 'Tensión de Red Correcta (220V)' },
+        { id: 'chk_mwo_tierra', label: 'Puesta a Tierra Ok' },
+        { id: 'chk_mwo_puerta', label: 'Interruptores de Puerta (Microswitches)' },
+        { id: 'chk_mwo_magnetron', label: 'Magnetrón / Cavidad (Sin Chispas)' },
+        { id: 'chk_mwo_voltaje', label: 'Capacitor y Diodo Alta Tensión' },
+        { id: 'chk_mwo_plato', label: 'Giro de Plato / Motor Sincrónico' },
+        { id: 'chk_mwo_prueba', label: 'Prueba de Calentamiento de Agua' },
+        { id: 'chk_mwo_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'OVEN - Hornos Eléctricos': [
+        { id: 'chk_oven_tension', label: 'Tensión de Red Correcta (220V)' },
+        { id: 'chk_oven_tierra', label: 'Puesta a Tierra Ok' },
+        { id: 'chk_oven_mueble', label: 'Ventilación de Empotramiento en mueble correcta' },
+        { id: 'chk_oven_res_sup', label: 'Resistencia Superior y Grill funcionando Ok' },
+        { id: 'chk_oven_res_inf', label: 'Resistencia Inferior funcionando Ok' },
+        { id: 'chk_oven_conveccion', label: 'Turbina de Convección funcionando Ok' },
+        { id: 'chk_oven_ntc', label: 'Sensor de Temperatura / Termostato NTC Ok' },
+        { id: 'chk_oven_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'MONITOR - Monitores': [
+        { id: 'chk_mon_panel', label: 'Panel sin fisuras ni pixeles defectuosos' },
+        { id: 'chk_mon_trafo', label: 'Voltaje de Transformador Externo (Vcc) Ok' },
+        { id: 'chk_mon_puertos', label: 'Puertos HDMI / DisplayPort / Type-C Ok' },
+        { id: 'chk_mon_osd', label: 'Botones y Menú en Pantalla (OSD) Ok' },
+        { id: 'chk_mon_brillo', label: 'Regulación de brillo sin parpadeos (Flicker) Ok' },
+        { id: 'chk_mon_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'AUDIO - Dispositivos de Audio / Torres / Barras': [
+        { id: 'chk_aud_canales', label: 'Canales de Salida de audio funcionando sin distorsión' },
+        { id: 'chk_aud_subwoofer', label: 'Subwoofer inalámbrico emparejado y graves Ok' },
+        { id: 'chk_aud_wireless', label: 'Conectividad Bluetooth / Wi-Fi Ok' },
+        { id: 'chk_aud_entradas', label: 'Puertos físicos HDMI ARC and Entrada Óptica Ok' },
+        { id: 'chk_aud_controles', label: 'Botonera física y sensor de control remoto Ok' },
+        { id: 'chk_aud_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'PROJECTOR - Proyectores': [
+        { id: 'chk_proj_luz', label: 'Horas de Lámpara/Láser leídas desde menú de servicio' },
+        { id: 'chk_proj_lentes', label: 'Ajuste de Enfoque, Zoom y corrección Keystone Ok' },
+        { id: 'chk_proj_coolers', label: 'Ventiladores internos funcionando sin ruidos' },
+        { id: 'chk_proj_dmd', label: 'Calidad de Imagen / Proyección de colores sin manchas' },
+        { id: 'chk_proj_entradas', label: 'Entrada HDMI / Conector USB-C de señal Ok' },
+        { id: 'chk_proj_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ],
+      'COOKTOP - Anafes / Cocción': [
+        { id: 'chk_cook_cable', label: 'Sección de cables de alimentación e instalación adecuada' },
+        { id: 'chk_cook_zonas', label: 'Todas las zonas calientan al nivel máximo Ok' },
+        { id: 'chk_cook_ollas', label: 'Detección Magnética de recipientes (Inducción) Ok' },
+        { id: 'chk_cook_tactil', label: 'Panel de mandos táctiles responde rápido Ok' },
+        { id: 'chk_cook_cooler', label: 'Turbinas inferiores de enfriamiento Ok' },
+        { id: 'chk_cook_otro', label: 'Otro aspecto verificado (Especificar en Informe)' }
+      ]
+    };
+
+    // AL CARGAR Y RECONEXIÓN SEGURA
+    function inicializarApp() {
+      updateChecklist();
+      setupSignaturePads();
+      preventTouchScrollingOnCanvases();
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', inicializarApp);
+    } else {
+      inicializarApp();
+    }
+
+    // ESCÁNER DE BARRAS: Inicialización y lectura
+    function openScanner(targetId) {
+      scannerTargetId = targetId;
+      document.getElementById('scanner-modal').classList.remove('hidden');
+
+      const formats = [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.QR_CODE
+      ];
+
+      try {
+        html5QrcodeScanner = new Html5Qrcode("interactive-reader");
+        html5QrcodeScanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 12,
+            qrbox: (w, h) => {
+              return { width: Math.min(w * 0.85, 260), height: Math.min(h * 0.4, 90) };
+            },
+            formatsToSupport: formats
+          },
+          (decodedText) => {
+            document.getElementById(scannerTargetId).value = decodedText;
+            closeScanner();
+          },
+          () => {} // Lectura frame a frame fallida (ignorar)
+        ).catch(() => {
+          showScannerFallbackInfo();
+        });
+      } catch (err) {
+        showScannerFallbackInfo();
+      }
+    }
+
+    function showScannerFallbackInfo() {
+      alert("No se pudo iniciar la cámara en vivo del escáner. Utilice el botón 'Elegir Imagen' para cargar una fotografía.");
+    }
+
+    function closeScanner() {
+      document.getElementById('scanner-modal').classList.add('hidden');
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => {
+          html5QrcodeScanner = null;
+        }).catch(() => {
+          html5QrcodeScanner = null;
+        });
+      }
+    }
+
+    function scanFromUploadedFile(event) {
+      const file = event.target.files[0];
+      if (!file || !scannerTargetId) return;
+
+      const localHtml5Qrcode = new Html5Qrcode("interactive-reader");
+      localHtml5Qrcode.scanFile(file, true)
+        .then(decodedText => {
+          document.getElementById(scannerTargetId).value = decodedText;
+          closeScanner();
+        })
+        .catch(() => {
+          alert("No se detectó un código de barras en la imagen. Inténtelo con otra foto o digítelo a mano.");
+        });
+    }
+
+    // CÁMARA WEBRTC EN VIVO PARA EVIDENCIAS FOTOGRÁFICAS
+    function openCameraModal(containerId) {
+      cameraTargetContainerId = containerId;
+      document.getElementById('camera-modal').classList.remove('hidden');
+
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false
+      }).then(stream => {
+        cameraMediaStream = stream;
+        const video = document.getElementById('camera-stream');
+        video.srcObject = stream;
+      }).catch(err => {
+        console.error("No se pudo abrir la cámara en vivo:", err);
+        alert("Acceso a la cámara denegado. Se utilizará el cargador de archivos del sistema.");
+        closeCameraModal();
+        triggerFileSelector(containerId);
+      });
+    }
+
+    function closeCameraModal() {
+      document.getElementById('camera-modal').classList.add('hidden');
+      if (cameraMediaStream) {
+        cameraMediaStream.getTracks().forEach(track => track.stop());
+        cameraMediaStream = null;
+      }
+    }
+
+    function triggerFileSelector(containerId) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => handleImageUpload(e, containerId);
+      input.click();
+    }
+
+    function takeSnapshot() {
+      if (!cameraMediaStream || !cameraTargetContainerId) return;
+
+      const video = document.getElementById('camera-stream');
+      const canvas = document.createElement('canvas');
+      
+      const width = video.videoWidth || 640;
+      const height = video.videoHeight || 640;
+      const size = Math.min(width, height);
+      const startX = (width - size) / 2;
+      const startY = (height - size) / 2;
+
+      canvas.width = 600;
+      canvas.height = 600;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, startX, startY, size, size, 0, 0, 600, 600);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      addEvidenceImage(dataUrl, cameraTargetContainerId);
+      closeCameraModal();
+    }
+
+    function addEvidenceImage(srcUrl, containerId) {
+      const container = document.getElementById(containerId);
+      const div = document.createElement('div');
+      div.className = 'relative rounded-xl overflow-hidden border border-samsung-cardBorder bg-black aspect-square shadow shadow-black';
+      div.innerHTML = `
+        <img src="${srcUrl}" class="w-full h-full object-cover evidence-img">
+        <button type="button" onclick="this.parentElement.remove()" class="absolute top-1 right-1 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition">×</button>
+      `;
+      container.appendChild(div);
+    }
+
+    function handleImageUpload(e, containerId) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        addEvidenceImage(event.target.result, containerId);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // DICTADO DE VOZ (SPEECH RECOGNITION DE ALTA ESTABILIDAD)
+    function startDictation(textareaId) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const textarea = document.getElementById(textareaId);
+
+      if (!SpeechRecognition) {
+        textarea.focus();
+        alert("El dictado automático no se admite en este navegador. Utilice el botón de micrófono integrado en su teclado.");
+        return;
+      }
+
+      activeDictationTargetId = textareaId;
+      const preview = document.getElementById('dictation-preview');
+      preview.innerText = "Escuchando... Hable claramente ahora.";
+
+      try {
+        recognitionInstance = new SpeechRecognition();
+        recognitionInstance.lang = 'es-AR';
+        recognitionInstance.continuous = true;
+        recognitionInstance.interimResults = true;
+
+        recognitionInstance.onstart = function() {
+          document.getElementById('dictation-overlay').classList.remove('hidden');
+        };
+
+        recognitionInstance.onresult = function(event) {
+          let interimTranscript = '';
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+
+          if (finalTranscript) {
+            textarea.value += (textarea.value ? ' ' : '') + finalTranscript;
+          }
+          preview.innerText = finalTranscript || interimTranscript || "Escuchando...";
+        };
+
+        recognitionInstance.onerror = function() {
+          stopDictation();
+        };
+
+        recognitionInstance.onend = function() {
+          stopDictation();
+        };
+
+        recognitionInstance.start();
+      } catch (err) {
+        textarea.focus();
+      }
+    }
+
+    function stopDictation() {
+      document.getElementById('dictation-overlay').classList.add('hidden');
+      if (recognitionInstance) {
+        try {
+          recognitionInstance.stop();
+        } catch(e){}
+        recognitionInstance = null;
+      }
+    }
+
+    // BASE DE DATOS DE SÍNTOMAS ESPECÍFICOS POR LÍNEA DE PRODUCTO
+    const symptomsOptions = {
+      'REF - Refrigeración (Heladeras / Freezers)': [
+        { value: 'No enfría nada', label: 'No enfría nada (Compresor no arranca)' },
+        { value: 'Enfría poco', label: 'Enfría poco (Falta de rendimiento)' },
+        { value: 'Bloqueo por hielo', label: 'Bloqueo por hielo (No hace deshielo)' },
+        { value: 'Pérdida de agua', label: 'Pérdida de agua (Goteo interior/desagüe)' },
+        { value: 'Ruidos extraños', label: 'Ruidos extraños o vibración fuerte' },
+        { value: 'Error en display', label: 'Alarma sonora constante / Error en display' }
+      ],
+      'WM - Lavados (Lavarropas / Secarropas)': [
+        { value: 'No enciende', label: 'No enciende / Sin energía' },
+        { value: 'No carga agua', label: 'No carga agua (Error de entrada)' },
+        { value: 'No desagota', label: 'No desagota / No drena agua' },
+        { value: 'No centrifuga', label: 'No centrifuga / Error desbalanceo (UE)' },
+        { value: 'Ruido centrifugado', label: 'Golpeteo o ruido fuerte en centrifugado' },
+        { value: 'Puerta trabada', label: 'La puerta no abre / Error de bloqueo (dE)' },
+        { value: 'Pérdida de agua', label: 'Pérdida de agua por jabonera o fuelle' }
+      ],
+      'VD - Visual Display (Televisores / Monitores)': [
+        { value: 'No enciende', label: 'No enciende (LED standby parpadea/apagado)' },
+        { value: 'Pantalla negra', label: 'Pantalla negra con sonido de fondo (Backlight)' },
+        { value: 'Líneas pantalla', label: 'Líneas verticales u horizontales en pantalla' },
+        { value: 'Efecto Mura', label: 'Manchas en pantalla / Fugas de luz (Mura)' },
+        { value: 'Falla Wi-Fi', label: 'No conecta a Wi-Fi / Falla de Smart Hub' },
+        { value: 'Sin sonido', label: 'Sin sonido o audio distorsionado' }
+      ],
+      'AC - Climatización (RAC / CAC)': [
+        { value: 'No enfría', label: 'No enfría / Tira aire templado (Modo Frío)' },
+        { value: 'No calienta', label: 'No calienta / Tira aire templado (Modo Calor)' },
+        { value: 'No responde control', label: 'No enciende / Sin respuesta al control remoto' },
+        { value: 'Gotea agua', label: 'Unidad interior gotea agua hacia adentro' },
+        { value: 'Congelamiento', label: 'Congelamiento de evaporador o cañería' },
+        { value: 'Error comunicación', label: 'Error de comunicación en display (Bus de datos)' }
+      ],
+      'MWO - Cocción / Microondas': [
+        { value: 'No calienta', label: 'Enciende pero no calienta (Alta Tensión)' },
+        { value: 'Hace chispas', label: 'Hace chispas en la cavidad interna (Mica)' },
+        { value: 'Plato no gira', label: 'No gira el plato de vidrio' },
+        { value: 'Táctil no responde', label: 'No responde el panel táctil / membrana' },
+        { value: 'No enciende', label: 'No enciende por completo (Fusible/Puerta)' }
+      ],
+      'OVEN - Hornos Eléctricos': [
+        { value: 'No calienta', label: 'No calienta nada (Display encendido)' },
+        { value: 'Calor desigual', label: 'Calienta solo arriba o solo abajo' },
+        { value: 'Fuga calor', label: 'Fuga de calor excesiva por la puerta (Burlete)' },
+        { value: 'No corta temp', label: 'No corta temperatura / Quema alimentos (NTC)' },
+        { value: 'Turbina no gira', label: 'Turbina de convección no gira o ruidosa' }
+      ],
+      'MONITOR - Monitores': [
+        { value: 'Pantalla negra', label: 'Pantalla negra / LED parpadea (Sin señal)' },
+        { value: 'Imagen parpadea', label: 'Imagen parpadea constantemente (Flicker)' },
+        { value: 'Pixeles muertos', label: 'Píxeles muertos / fijos o líneas de color' },
+        { value: 'Falla puertos', label: 'No reconoce entradas (HDMI/DP/TypeC)' },
+        { value: 'Se apaga', label: 'Se apaga solo después de unos minutos' }
+      ],
+      'AUDIO - Dispositivos de Audio / Torres / Barras': [
+        { value: 'Sin sonido', label: 'Sin sonido o audio muy bajo / distorsionado' },
+        { value: 'Falla subwoofer', label: 'Subwoofer inalámbrico no se conecta o sin bajos' },
+        { value: 'Falla wireless', label: 'No conecta por Bluetooth o Wi-Fi' },
+        { value: 'Falla entradas', label: 'Falla en entradas físicas (HDMI ARC/Óptica)' },
+        { value: 'No enciende', label: 'No enciende / Sin energía' }
+      ],
+      'PROJECTOR - Proyectores': [
+        { value: 'No proyecta', label: 'No proyecta imagen / Lámpara no enciende' },
+        { value: 'Imagen borrosa', label: 'Imagen borrosa o fuera de foco (Lente)' },
+        { value: 'Pixeles fijos', label: 'Puntos DMD blancos/negros o manchas' },
+        { value: 'Sobrecalentamiento', label: 'Se apaga por sobrecalentamiento (Temp LED)' },
+        { value: 'Cooler ruidoso', label: 'Ruido excesivo de los ventiladores' }
+      ],
+      'COOKTOP - Anafes / Cocción': [
+        { value: 'Zonas no calientan', label: 'Una o varias zonas no calientan nada' },
+        { value: 'No detecta ollas', label: 'No detecta los recipientes (Inducción)' },
+        { value: 'Táctil bloqueado', label: 'Panel táctil bloqueado o no responde' },
+        { value: 'Salta térmica', label: 'Salta la llave térmica del domicilio al encender' },
+        { value: 'Turbinas ruidosas', label: 'Turbinas inferiores de enfriamiento ruidosas' }
+      ]
+    };
+
+    // BASE DE DATOS DE DIAGNÓSTICOS ESPECÍFICOS POR LÍNEA DE PRODUCTO
+    const defectOptions = {
+      'REF - Refrigeración (Heladeras / Freezers)': [
+        { value: 'Fuga de refrigerante', label: 'Fuga de refrigerante (Circuito sellado)' },
+        { value: 'Compresor defectuoso', label: 'Compresor Inverter defectuoso (Mecánico/Bobinado)' },
+        { value: 'Placas defectuosas', label: 'Placa principal (Main PBA) o Placa Inverter' },
+        { value: 'Sensores descalibrados', label: 'Sensor de temperatura (NTC) / Bimetal fuera de rango' },
+        { value: 'Resistencia quemada', label: 'Resistencia de deshielo quemada / Fusible abierto' },
+        { value: 'Forzador dañado', label: 'Motor forzador de evaporador / condensador dañado' },
+        { value: 'Damper obstruido', label: 'Damper termostático / Compuerta obstruida' }
+      ],
+      'WM - Lavados (Lavarropas / Secarropas)': [
+        { value: 'Placa main quemada', label: 'Placa electrónica principal (Main PBA) quemada' },
+        { value: 'Electroválvula dañada', label: 'Electroválvula de ingreso de agua quemada/obstruida' },
+        { value: 'Bomba quemada', label: 'Bomba de desagote quemada o hélice bloqueada' },
+        { value: 'Bloqueapuertas roto', label: 'Bloqueapuertas electromagnético defectuoso' },
+        { value: 'Motor dañado', label: 'Motor de lavado (Direct Drive/Carbones) dañado' },
+        { value: 'Resistencia quemada', label: 'Resistencia de calentamiento de agua quemada' },
+        { value: 'Suspensión vencida', label: 'Amortiguadores vencidos o resortes rotos' }
+      ],
+      'VD - Visual Display (Televisores / Monitores)': [
+        { value: 'Fuente SMPS defectuosa', label: 'Placa Fuente (SMPS) defectuosa (Inestabilidad voltajes)' },
+        { value: 'Placa Main defectuosa', label: 'Placa Main defectuosa (Chip, puertos o lógica)' },
+        { value: 'Backlight quemado', label: 'Tiras de LED (Backlight) quemadas / Driver dañado' },
+        { value: 'Panel LCD dañado', label: 'Panel LCD/LED con daño físico o Efecto Mura extremo' },
+        { value: 'Modulo Wi-Fi dañado', label: 'Módulo Wi-Fi / Bluetooth quemado' },
+        { value: 'Altavoces dañados', label: 'Altavoces / Parlantes internos quemados/desconados' }
+      ],
+      'AC - Climatización (RAC / CAC)': [
+        { value: 'Falla instalación', label: 'Falla de instalación (Pestañas, caño estrangulado)' },
+        { value: 'Fuga gas', label: 'Fuga de gas refrigerante en serpentinas o uniones' },
+        { value: 'Compresor Inverter dañado', label: 'Motocompresor Inverter dañado (Bobinado/Compresión)' },
+        { value: 'Valvula de 4 vías trabada', label: 'Válvula inversora de 4 vías trabada o bobina quemada' },
+        { value: 'Placa electrónica defectuosa', label: 'Placa Main (Interior) o Placa Exterior defectuosa' },
+        { value: 'Sensores fuera de rango', label: 'Sensores de caño / ambiental descalibrados' },
+        { value: 'Turbina/Forzador quemado', label: 'Motor de turbina o forzador quemado' }
+      ],
+      'MWO - Cocción / Microondas': [
+        { value: 'Magnetrón defectuoso', label: 'Magnetrón agotado, en corto o antena perforada' },
+        { value: 'Diodo/Capacitor HT quemado', label: 'Diodo quemado o capacitor de alta tensión en corto' },
+        { value: 'Trafo HT dañado', label: 'Transformador de alta tensión dañado/abierto' },
+        { value: 'Switches desalineados', label: 'Microswitches de puerta desalineados o rotos' },
+        { value: 'Panel táctil inoperativo', label: 'Placa de control digital o membrana inoperativa' },
+        { value: 'Motor plato quemado', label: 'Motor síncrono de giro de plato quemado' }
+      ],
+      'OVEN - Hornos Eléctricos': [
+        { value: 'Resistencia quemada', label: 'Resistencia superior, inferior o circular quemada' },
+        { value: 'Sensor Termostato defectuoso', label: 'Sensor NTC o termostato descalibrado/abierto' },
+        { value: 'Conmutador quemado', label: 'Llave selectora de funciones con contactos quemados' },
+        { value: 'Motor coolers dañado', label: 'Motor recirculador (Convección) o cooler dañado' },
+        { value: 'Burlete dañado', label: 'Junta de puerta rota o bisagras vencidas' },
+        { value: 'Placa control defectuosa', label: 'Placa lógica o temporizador digital defectuoso' }
+      ],
+      'MONITOR - Monitores': [
+        { value: 'Placa lógica Main defectuosa', label: 'Placa lógica Main Board defectuosa' },
+        { value: 'Panel LCD dañado', label: 'Panel LCD/LED con daño físico (Fisura/líneas/pixeles)' },
+        { value: 'Fuente externa quemada', label: 'Fuente externa (Transformador) quemada/falla' },
+        { value: 'Backlight LED defectuoso', label: 'Retroiluminación LED inoperativa o parpadea' },
+        { value: 'Joystick OSD dañado', label: 'Botón Joystick de navegación / Teclado dañado' }
+      ],
+      'AUDIO - Dispositivos de Audio / Torres / Barras': [
+        { value: 'Placa potencia quemada', label: 'Placa amplificadora de potencia (IC audio) quemada' },
+        { value: 'Modulo wireless Subwoofer dañado', label: 'Módulo transceptor inalámbrico Subwoofer dañado' },
+        { value: 'Modulo BT/Wi-Fi defectuoso', label: 'Módulo transceptor Bluetooth / Wi-Fi defectuoso' },
+        { value: 'Fuente SMPS inoperativa', label: 'Fuente de alimentación principal inoperativa/capacitores' },
+        { value: 'Altavoz dañado', label: 'Altavoz (Tweeter/Woofer) con bobina abierta/roce' }
+      ],
+      'PROJECTOR - Proyectores': [
+        { value: 'Láser quemado', label: 'Lámpara / Diodo láser quemado o vida útil agotada' },
+        { value: 'Chip DMD dañado', label: 'Chip DMD dañado (Pixeles fijos o puntos DMD)' },
+        { value: 'Rueda color trabada', label: 'Filtro óptico / Rueda de color trabada o sensor sucio' },
+        { value: 'Ventilador quemado', label: 'Turbina / Ventilador de refrigeración quemado/ruidoso' },
+        { value: 'Motores lentes trabados', label: 'Motores de lentes (Enfoque/Zoom) trabados' }
+      ],
+      'COOKTOP - Anafes / Cocción': [
+        { value: 'Bobina inducción dañada', label: 'Placa generadora (Bobina inducción) abierta/corto' },
+        { value: 'Resistencia vitro quemada', label: 'Resistencia vitrocerámica quemada' },
+        { value: 'Modulo Touch Control dañado', label: 'Placa Touch Control dañada o descalibrada' },
+        { value: 'Sensor foco defectuoso', label: 'Sensor de temperatura de foco abierto/falla' },
+        { value: 'Cooler inferior quemado', label: 'Turbina inferior de refrigeración quemada' }
+      ]
+    };
+
+    // ACTUALIZACIÓN DEL CHECKLIST, SÍNTOMAS Y DEFECTOS DINÁMICOS
+    function updateChecklist() {
+      const lineType = document.getElementById('line-type').value;
+      const container = document.getElementById('dynamic-checklist');
+      if (!container) return;
+
+      container.innerHTML = '';
+      const items = checklists[lineType] || [];
+      items.forEach(item => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center space-x-2.5 text-gray-300 cursor-pointer p-2 rounded-lg hover:bg-samsung-inputBg transition duration-150';
+        label.innerHTML = `
+          <input type="checkbox" id="${item.id}" class="dynamic-chk rounded bg-black border-[#222533] w-4.5 h-4.5 text-[#034EA2]">
+          <span>${item.label}</span>
+        `;
+        container.appendChild(label);
+      });
+
+      // Controlar visibilidad del panel de refrigeración de manera segura
+      const frigoPanel = document.getElementById('frigo-intervention-panel');
+      if (frigoPanel) {
+        if (lineType.startsWith('REF') || lineType.startsWith('AC')) {
+          frigoPanel.classList.remove('hidden');
+        } else {
+          frigoPanel.classList.add('hidden');
+          const frigoActive = document.getElementById('frigo-active');
+          if (frigoActive) {
+            frigoActive.checked = false;
+          }
+          toggleFrigoPanel();
+        }
+      }
+
+      // Actualizar selectores dinámicos de Síntomas, Defectos y Metodología
+      updateSymptomOptions(lineType);
+      updateDefectOptions(lineType);
+      updateDiagnosticsOptions(lineType);
+    }
+
+    // ACTUALIZA LÓGICA DE SÍNTOMAS EN PANTALLA
+    function updateSymptomOptions(lineType) {
+      const select = document.getElementById('symptom-category');
+      if (!select) return;
+      select.innerHTML = '';
+
+      const options = symptomsOptions[lineType] || [];
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.innerText = opt.label;
+        select.appendChild(option);
+      });
+
+      // Agregar opción "Otro" siempre al final
+      const otherOpt = document.createElement('option');
+      otherOpt.value = 'OTHER';
+      otherOpt.innerText = 'Otro (Especificar)';
+      select.appendChild(otherOpt);
+
+      // Resetear vista manual
+      toggleManualInput('symptom-category', 'symptom-manual-container');
+    }
+
+    // ACTUALIZA LÓGICA DE DEFECTOS EN PANTALLA
+    function updateDefectOptions(lineType) {
+      const select = document.getElementById('defect-category');
+      if (!select) return;
+      select.innerHTML = '';
+
+      const options = defectOptions[lineType] || [];
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.innerText = opt.label;
+        select.appendChild(option);
+      });
+
+      // Agregar opción "Otro" siempre al final
+      const otherOpt = document.createElement('option');
+      otherOpt.value = 'OTHER';
+      otherOpt.innerText = 'Otro (Especificar)';
+      select.appendChild(otherOpt);
+
+      // Resetear vista manual
+      toggleManualInput('defect-category', 'defect-manual-container');
+    }
+
+    // BASE DE DATOS DE MÉTODOS DE PRUEBA ESPECÍFICOS POR LÍNEA DE PRODUCTO
+    const diagnosticsOptions = {
+      'REF - Refrigeración (Heladeras / Freezers)': [
+        { value: 'Presión de Gas', label: 'Medición de Presión de Gas (Circuito Refrigerante)' },
+        { value: 'Resistencia Sensores', label: 'Medición de Resistencia de Sensores / Fusible' },
+        { value: 'Consumo Compresor', label: 'Consumo Eléctrico de Compresor (A)' },
+        { value: 'Autodiagnóstico', label: 'Lectura de Códigos de Autodiagnóstico GSPN' },
+        { value: 'Inspección Mecánica', label: 'Inspección Visual / Mecánica (Burletes/Forzadores)' }
+      ],
+      'WM - Lavados (Lavarropas / Secarropas)': [
+        { value: 'Prueba Ciclo', label: 'Prueba de Llenado, Drenaje y Centrifugado' },
+        { value: 'Resistencia Bobinas', label: 'Medición de Resistencia (Electroválvulas/Bomba)' },
+        { value: 'Traba Puerta', label: 'Control de Bloqueapuertas y Presostato' },
+        { value: 'Giro Motor', label: 'Consumo del Motor / Giro Bidireccional' },
+        { value: 'Inspección Mecánica', label: 'Inspección Mecánica (Amortiguadores/Rulemanes)' }
+      ],
+      'VD - Visual Display (Televisores / Monitores)': [
+        { value: 'Voltajes Fuente', label: 'Medición de Voltajes de Fuente (Standby / 13V)' },
+        { value: 'Prueba Backlight', label: 'Prueba de Backlight (Retroiluminación LED)' },
+        { value: 'Efecto Mura', label: 'Inspección Visual de Panel (Mura / Fugas de luz)' },
+        { value: 'Señal Entradas', label: 'Prueba de Señal / Entradas HDMI / Wi-Fi' },
+        { value: 'Firmware Update', label: 'Actualización de Firmware / Reseteo de Fábrica' }
+      ],
+      'AC - Climatización (RAC / CAC)': [
+        { value: 'Normas Instalación', label: 'Control de Normas de Instalación (Cañería >=3m, vacío)' },
+        { value: 'Presión Trabajo', label: 'Medición de Presión de Gas de Trabajo' },
+        { value: 'Consumo Compresor', label: 'Consumo Eléctrico de Compresor Inverter' },
+        { value: 'Bus Datos', label: 'Sincronización de Bus de Datos (Interior-Exterior)' },
+        { value: 'Válvula 4 Vías', label: 'Control de Válvula de 4 Vías (Inversora)' }
+      ],
+      'MWO - Cocción / Microondas': [
+        { value: 'Switches Puerta', label: 'Control de Microswitches de Puerta (Enclavamiento)' },
+        { value: 'Magnetrón Mica', label: 'Prueba de Magnetrón y Placa de Mica (Ondas)' },
+        { value: 'Alta Tensión', label: 'Medición de Diodo y Capacitor de Alta Tensión' },
+        { value: 'Test Calentamiento', label: 'Test de Calentamiento de Agua estándar' }
+      ],
+      'OVEN - Hornos Eléctricos': [
+        { value: 'Resistencia Superior', label: 'Medición de Resistencia Superior / Grill (A)' },
+        { value: 'Resistencia Inferior', label: 'Medición de Resistencia Inferior (A)' },
+        { value: 'Termostato Convección', label: 'Control de Termostato NTC y Convección' },
+        { value: 'Junta Bisagras', label: 'Inspección de Junta y Bisagras de Puerta' }
+      ],
+      'MONITOR - Monitores': [
+        { value: 'Panel Brillo', label: 'Inspección Visual de Panel (Pixeles, brillo)' },
+        { value: 'Trafo Externo', label: 'Control de Transformador Externo (Vcc)' },
+        { value: 'Puertos Video', label: 'Detección de Señal en Puertos (HDMI/DP/TypeC)' },
+        { value: 'Teclado OSD', label: 'Control de Teclado OSD' }
+      ],
+      'AUDIO - Dispositivos de Audio / Torres / Barras': [
+        { value: 'Canales Salida', label: 'Prueba de Canales de Salida L/R y Subwoofer' },
+        { value: 'Enlace Wireless', label: 'Enlace Inalámbrico (Bluetooth / Wi-Fi)' },
+        { value: 'Entradas ARC', label: 'Prueba de Entradas Físicas (Óptica / HDMI ARC)' },
+        { value: 'Botonera IR', label: 'Control de Botonera y Sensor Remoto IR' }
+      ],
+      'PROJECTOR - Proyectores': [
+        { value: 'Horas Lámpara', label: 'Lectura de Horas de Lámpara/Láser' },
+        { value: 'Ajuste Optico', label: 'Ajuste de Enfoque, Zoom y Keystone' },
+        { value: 'Ventiladores DMD', label: 'Control de Ventiladores y DMD' }
+      ],
+      'COOKTOP - Anafes / Cocción': [
+        { value: 'Cables Voltaje', label: 'Sección de Cables e Voltaje de Alimentación' },
+        { value: 'Inducción Ollas', label: 'Prueba de Inducción / Sensor de Ollas' },
+        { value: 'Táctil Bloqueo', label: 'Respuesta de Panel Táctil y Bloqueo' }
+      ]
+    };
+
+    function updateDiagnosticsOptions(lineType) {
+      const select = document.getElementById('diag-test-type');
+      if (!select) return;
+      select.innerHTML = '';
+      
+      const options = diagnosticsOptions[lineType] || [
+        { value: 'Medición de Voltaje/Corriente', label: 'Medición eléctrica en vivo (Voltaje/Corriente)' },
+        { value: 'Medición de Resistencia/Ohms', label: 'Medición de resistencia estática (Sensores/Componentes)' },
+        { value: 'Inspección Visual / Mecánica', label: 'Inspección física y visual' }
+      ];
+
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.innerText = opt.label;
+        select.appendChild(option);
+      });
+    }
+
+    // Funciones del panel de refrigeración profunda
+    function toggleFrigoPanel() {
+      const frigoActive = document.getElementById('frigo-active');
+      const content = document.getElementById('frigo-content');
+      if (!content) return;
+      
+      const active = frigoActive ? frigoActive.checked : false;
+      if (active) content.classList.remove('hidden');
+      else content.classList.add('hidden');
+    }
+
+    // Previene el scroll del WebView al trazar firmas en móviles
+    function preventTouchScrollingOnCanvases() {
+      const canvases = ['tech-sig-canvas', 'client-sig-canvas'];
+      canvases.forEach(id => {
+        const canvas = document.getElementById(id);
+        if (canvas) {
+          canvas.addEventListener('touchstart', e => { e.preventDefault(); }, { passive: false });
+          canvas.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
+          canvas.addEventListener('touchend', e => { e.preventDefault(); }, { passive: false });
+        }
+      });
+    }
+
+    function toggleCompresorDetails() {
+      const activeEl = document.getElementById('frigo_work_compresor');
+      const container = document.getElementById('frigo-compresor-container');
+      if (!container) return;
+      
+      const chk = activeEl ? activeEl.checked : false;
+      if (chk) container.classList.remove('hidden');
+      else container.classList.add('hidden');
+    }
+
+    function toggleFrigoOtro() {
+      const activeEl = document.getElementById('frigo_work_otro');
+      const container = document.getElementById('frigo-work-otro-container');
+      if (!container) return;
+      
+      const chk = activeEl ? activeEl.checked : false;
+      if (chk) container.classList.remove('hidden');
+      else container.classList.add('hidden');
+    }
+
+    // CONFIGURACIÓN DE LOS PADS DE FIRMA TÁCTIL Y MOUSE
+    function setupSignaturePads() {
+      const canvases = ['tech-sig-canvas', 'client-sig-canvas'];
+      canvases.forEach(id => {
+        const canvas = document.getElementById(id);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+          const rect = canvas.getBoundingClientRect();
+          if (canvas.width !== rect.width || canvas.height !== rect.height) {
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.fillStyle = '#FFFFFF';
+          }
+        }
+        
+        resizeCanvas();
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(resizeCanvas, 200);
+        });
+
+        let drawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function getPos(e) {
+          const rect = canvas.getBoundingClientRect();
+          if (e.touches && e.touches.length > 0) {
+            return {
+              x: e.touches[0].clientX - rect.left,
+              y: e.touches[0].clientY - rect.top
+            };
+          }
+          return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+          };
+        }
+
+        function startDraw(e) {
+          drawing = true;
+          const pos = getPos(e);
+          lastX = pos.x;
+          lastY = pos.y;
+        }
+
+        function draw(e) {
+          if (!drawing) return;
+          e.preventDefault();
+          const pos = getPos(e);
+          ctx.beginPath();
+          ctx.moveTo(lastX, lastY);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+          lastX = pos.x;
+          lastY = pos.y;
+        }
+
+        function stopDraw() {
+          drawing = false;
+        }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw);
+      });
+    }
+
+    function clearSignature(id) {
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // NAVEGACIÓN ENTRE SECCIONES
+    function switchTab(e, index) {
+      if (e) e.preventDefault();
+      const tabs = document.querySelectorAll('.tab-content');
+      const btns = document.querySelectorAll('.tab-btn');
+
+      tabs[currentTab].classList.add('hidden');
+      btns[currentTab].classList.remove('text-[#2196F3]', 'border-[#2196F3]');
+      btns[currentTab].classList.add('text-gray-400', 'border-transparent');
+
+      currentTab = index;
+
+      tabs[currentTab].classList.remove('hidden');
+      btns[currentTab].classList.remove('text-gray-400', 'border-transparent');
+      btns[currentTab].classList.add('text-[#2196F3]', 'border-[#2196F3]');
+
+      if (currentTab === 3) {
+        generateSummary();
+        setTimeout(setupSignaturePads, 120);
+      }
+    }
+
+    function toggleManualInput(selectId, containerId) {
+      const select = document.getElementById(selectId);
+      const container = document.getElementById(containerId);
+      if (select.value === 'OTHER') container.classList.remove('hidden');
+      else container.classList.add('hidden');
+    }
+
+    // CONSTRUCCIÓN DEL RESUMEN PREVIO
+    function generateSummary() {
+      const model = document.getElementById('model').value || 'Sin especificar';
+      const serial = document.getElementById('serial').value || 'Sin especificar';
+      const techName = document.getElementById('tech-name').value || 'Sin especificar';
+      const techId = document.getElementById('tech-id').value || 'N/A';
+      const techCenter = document.getElementById('tech-center').value || 'N/A';
+      const soNumber = document.getElementById('so-number').value || 'N/A';
+      const line = document.getElementById('line-type').value;
+      const warranty = document.getElementById('warranty').value;
+      const notes = document.getElementById('tech-notes').value || 'Sin observaciones';
+
+      let symptomCat = document.getElementById('symptom-category').value;
+      if (symptomCat === 'OTHER') symptomCat = document.getElementById('symptom-manual').value || 'Otro';
+
+      let defectCat = document.getElementById('defect-category').value;
+      if (defectCat === 'OTHER') defectCat = document.getElementById('defect-manual').value || 'Otro';
+
+      const desc = document.getElementById('symptom-desc').value || 'Sin detalle';
+
+      // Diagnóstico y Checklist
+      const diagSymptom = document.getElementById('diag-symptom-check').value;
+      const diagTest = document.getElementById('diag-test-type').value;
+      const diagEvidence = document.getElementById('diag-evidence').value || 'Ninguna registrada';
+
+      // Obtener checklist dinámico marcado
+      const lineChecklist = checklists[line] || [];
+      let checkedItemsHtml = '';
+      lineChecklist.forEach(item => {
+        const el = document.getElementById(item.id);
+        const isChecked = el ? el.checked : false;
+        checkedItemsHtml += `
+          <div class="flex items-center justify-between text-[11px] py-1 border-b border-[#222533]">
+            <span class="text-gray-300">• ${item.label}</span>
+            <span class="${isChecked ? 'text-emerald-400 font-bold' : 'text-gray-500'}">${isChecked ? 'VERIFICADO [OK]' : 'NO REVISADO'}</span>
+          </div>
+        `;
+      });
+
+      // Intervención de gas (si aplica)
+      let frigoHtml = '';
+      const frigoActive = document.getElementById('frigo-active').checked;
+      if (frigoActive) {
+        const gas = document.getElementById('frigo_gas_tipo').value;
+        const gramos = document.getElementById('frigo_gas_gramos').value || 'N/A';
+        const psi = document.getElementById('frigo_nitrogeno_psi').value || 'N/A';
+        const vacio = document.getElementById('frigo_vacio_micrones').value || 'N/A';
+        
+        let works = [];
+        if (document.getElementById('frigo_work_filter').checked) works.push('Filtro Dryer');
+        if (document.getElementById('frigo_work_fuga').checked) works.push('Reparación Fuga');
+        if (document.getElementById('frigo_work_compresor').checked) works.push('Cambio Compresor (' + document.getElementById('frigo_compresor_causa').value + ')');
+        if (document.getElementById('frigo_work_otro').checked) works.push(document.getElementById('frigo_work_otro_text').value || 'Otro');
+        
+        frigoHtml = `
+          <div class="pt-2"><span class="text-[10px] text-[#2196F3] block uppercase font-bold tracking-wider">Intervención de Circuito (Sellado):</span>
+            <div class="bg-[#1A1E2E] p-3 rounded-xl mt-1.5 border border-[#2A344D] space-y-1 text-[11px]">
+              <p><strong>Trabajos:</strong> ${works.join(', ') || 'Ninguno'}</p>
+              <p><strong>Presurización Nitrógeno:</strong> ${psi} PSI (Estanco: ${document.getElementById('frigo_nitrogeno_estanco').value})</p>
+              <p><strong>Vacio realizado:</strong> ${vacio} Micrones</p>
+              <p><strong>Carga de refrigerante:</strong> ${gramos} gramos de Gas ${gas} (Balanza: ${document.getElementById('frigo_gas_balanza').value})</p>
+            </div>
+          </div>
+        `;
+      }
+
+      const html = `
+        <div class="pt-1"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Orden GSPN</span><span class="font-extrabold text-white text-sm">${soNumber}</span></div>
+        <div class="pt-1"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Técnico / ASC</span><span class="font-semibold text-white">${techName} (${techId}) - ${techCenter}</span></div>
+        <div class="pt-1"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Equipo / Serie</span><span class="font-semibold text-white">${line} | ${model} | S/N: ${serial}</span></div>
+        <div class="pt-1"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Garantía</span><span class="font-semibold text-white">${warranty}</span></div>
+        <div class="pt-1"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Metodología de Diagnóstico</span>
+          <div class="text-[11px] text-gray-300 mt-1.5 pl-3 border-l-2 border-[#2196F3] space-y-1">
+            <p><strong>Comprobación:</strong> ${diagSymptom}</p>
+            <p><strong>Método de Prueba:</strong> ${diagTest}</p>
+            <p><strong>Evidencia Encontrada:</strong> ${diagEvidence}</p>
+          </div>
+        </div>
+        <div class="pt-2"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Checklist Verificado:</span>
+          <div class="bg-[#161924] p-3 rounded-xl mt-1.5 border border-samsung-cardBorder divide-y divide-[#222533]">
+            ${checkedItemsHtml}
+          </div>
+        </div>
+        ${frigoHtml}
+        <div class="pt-1"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Defecto Diagnosticado</span><span class="font-bold text-[#2196F3]">${symptomCat} → ${defectCat}</span></div>
+        <div class="pt-1"><span class="text-[10px] text-gray-400 block uppercase font-bold tracking-wider">Informe Técnico de Trabajo</span><span class="font-medium text-gray-300 leading-relaxed">${desc}</span></div>
+      `;
+
+      document.getElementById('summary-content').innerHTML = html;
+
+      const pdfImagesContainer = document.getElementById('pdf-images-container');
+      pdfImagesContainer.innerHTML = '';
+      document.querySelectorAll('.evidence-img').forEach(img => {
+        const clone = document.createElement('img');
+        clone.src = img.src;
+        clone.className = 'w-full h-20 object-cover rounded-xl border border-samsung-cardBorder';
+        pdfImagesContainer.appendChild(clone);
+      });
+    }
+
+    function isCanvasBlank(canvas) {
+      if (!canvas) return true;
+      const blank = document.createElement('canvas');
+      blank.width = canvas.width;
+      blank.height = canvas.height;
+      return canvas.toDataURL() === blank.toDataURL();
+    }
+
+    // EXPORTACIÓN DE REPORTE PDF MULTIPÁGINA (SOPORTA INTERNO GSPN O CONSTANCIA DE CLIENTE)
+    function generateAndExportPDF(type = 'internal') {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const techName = document.getElementById('tech-name').value || 'N/A';
+        const techId = document.getElementById('tech-id').value || 'N/A';
+        const techCenter = document.getElementById('tech-center').value || 'N/A';
+        const soNumber = document.getElementById('so-number').value || 'N/A';
+        
+        const line = document.getElementById('line-type').value;
+        const model = document.getElementById('model').value || 'N/A';
+        const serial = document.getElementById('serial').value || 'N/A';
+        const warranty = document.getElementById('warranty').value;
+        const notes = document.getElementById('tech-notes').value || 'Sin observaciones';
+
+        let symptomCat = document.getElementById('symptom-category').value;
+        if (symptomCat === 'OTHER') symptomCat = document.getElementById('symptom-manual').value || 'Otro';
+
+        let defectCat = document.getElementById('defect-category').value;
+        if (defectCat === 'OTHER') defectCat = document.getElementById('defect-manual').value || 'Otro';
+
+        const desc = document.getElementById('symptom-desc').value || 'Sin informe registrado';
+
+        // Diagnóstico
+        const diagSymptom = document.getElementById('diag-symptom-check').value;
+        const diagTest = document.getElementById('diag-test-type').value;
+        const diagEvidence = document.getElementById('diag-evidence').value || 'Ninguna registrada';
+
+        if (type === 'internal') {
+          // ==========================================
+          // 1. REPORTE GSPN TÉCNICO INTERNO
+          // ==========================================
+          
+          // HEADER INSTITUCIONAL
+          doc.setFillColor(3, 78, 162); // Samsung Blue
+          doc.rect(0, 0, 210, 24, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(13);
+          doc.setFont("helvetica", "bold");
+          doc.text("SAMSUNG GSPN - INFORME TÉCNICO DE SERVICIO", 14, 15);
+
+          // SECCIÓN 1: DATOS GENERALES
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("1. DATOS DE SERVICIO Y TÉCNICO", 14, 34);
+
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.text(`N° Orden de Trabajo (SO): ${soNumber}`, 14, 41);
+          doc.text(`Técnico Responsable: ${techName} (ID: ${techId})`, 14, 47);
+          doc.text(`Centro de Servicio Autorizado (ASC): ${techCenter}`, 14, 53);
+
+          // SECCIÓN 2: IDENTIFICACIÓN DE PRODUCTO
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("2. DATOS DEL PRODUCTO", 14, 63);
+
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Línea de Producto: ${line}`, 14, 70);
+          doc.text(`Modelo del Equipo: ${model}`, 14, 76);
+          doc.text(`Número de Serie (S/N): ${serial}`, 14, 82);
+          doc.text(`Estado de Garantía: ${warranty}`, 14, 88);
+          doc.text(`Observaciones de Ingreso: ${notes}`, 14, 94, { maxWidth: 180 });
+
+          // SECCIÓN 3: METODOLOGÍA DE DIAGNÓSTICO
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("3. PROCESO DE DIAGNÓSTICO", 14, 107);
+
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.text(`• Síntoma Declarado: ${symptomCat}`, 14, 114);
+          doc.text(`• Defecto Detectado: ${defectCat}`, 14, 120);
+          doc.text(`• Comprobación Síntoma: Se replicó como: ${diagSymptom}`, 14, 126);
+          doc.text(`• Método de Prueba: ${diagTest}`, 14, 132);
+          doc.text(`• Evidencia Encontrada: ${diagEvidence}`, 14, 138, { maxWidth: 180 });
+
+          // SECCIÓN 4: CHECKLIST DINÁMICO
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("4. CHECKLIST DE MEDICIONES TÉCNICAS REALIZADAS", 14, 150);
+
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "normal");
+          const items = checklists[line] || [];
+          let yOffset = 157;
+          items.forEach(item => {
+            const el = document.getElementById(item.id);
+            const isChecked = el ? el.checked : false;
+            const statusText = isChecked ? "[ OK ] VERIFICADO CORRECTAMENTE" : "[    ] NO VERIFICADO / NO REQUERIDO";
+            doc.text(`• ${item.label}:`, 18, yOffset);
+            doc.setFont("helvetica", "bold");
+            doc.text(statusText, 110, yOffset);
+            doc.setFont("helvetica", "normal");
+            yOffset += 5.5;
+          });
+
+          // SECCIÓN 5: INTERVENCIÓN TÉCNICA PROFUNDA (Solo si aplica)
+          const frigoActive = document.getElementById('frigo-active').checked;
+          if (frigoActive) {
+            if (yOffset > 240) {
+              doc.addPage();
+              yOffset = 30;
+            } else {
+              yOffset += 5;
+            }
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text("5. DETALLE DE INTERVENCIÓN EN CIRCUITO FRIGORÍFICO", 14, yOffset);
+
+            doc.setFontSize(8.5);
+            doc.setFont("helvetica", "normal");
+            
+            let works = [];
+            if (document.getElementById('frigo_work_filter').checked) works.push('Filtro Dryer');
+            if (document.getElementById('frigo_work_fuga').checked) works.push('Reparación Fuga');
+            if (document.getElementById('frigo_work_compresor').checked) works.push('Cambio Compresor');
+            if (document.getElementById('frigo_work_otro').checked) works.push(document.getElementById('frigo_work_otro_text').value || 'Otro');
+            
+            yOffset += 6;
+            doc.text(`• Trabajo en circuito: ${works.join(', ') || 'Ninguno'}`, 14, yOffset);
+            
+            const psi = document.getElementById('frigo_nitrogeno_psi').value || 'N/A';
+            const minNit = document.getElementById('frigo_nitrogeno_min').value || 'N/A';
+            const estanco = document.getElementById('frigo_nitrogeno_estanco').value;
+            yOffset += 5.5;
+            doc.text(`• Presurización Nitrógeno: ${psi} PSI por ${minNit} minutos (Estanqueidad: ${estanco})`, 14, yOffset);
+
+            const micrones = document.getElementById('frigo_vacio_micrones').value || 'N/A';
+            const minVac = document.getElementById('frigo_vacio_min').value || 'N/A';
+            yOffset += 5.5;
+            doc.text(`• Proceso de Vacío: ${micrones} Micrones por ${minVac} minutos`, 14, yOffset);
+
+            const gas = document.getElementById('frigo_gas_tipo').value;
+            const gramos = document.getElementById('frigo_gas_gramos').value || 'N/A';
+            const balanza = document.getElementById('frigo_gas_balanza').value;
+            yOffset += 5.5;
+            doc.text(`• Carga de Refrigerante: ${gramos} gramos de Gas ${gas} (Uso de Balanza: ${balanza})`, 14, yOffset);
+
+            if (document.getElementById('frigo_work_compresor').checked) {
+              const causa = document.getElementById('frigo_compresor_causa').value;
+              yOffset += 5.5;
+              doc.text(`• Causa de Cambio Compresor: ${causa}`, 14, yOffset);
+            }
+          }
+
+          // SECCIÓN 6: INFORME DE TRABAJO
+          if (yOffset > 240) {
+            doc.addPage();
+            yOffset = 30;
+          } else {
+            yOffset += 10;
+          }
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("6. TRABAJO REALIZADO / DETALLE TÉCNICO", 14, yOffset);
+
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.text(desc, 14, yOffset + 7, { maxWidth: 180 });
+
+          // SECCIÓN 7: FIRMAS DIGITALES
+          let sigY = yOffset + 40;
+          if (sigY > 260) {
+            doc.addPage();
+            sigY = 30;
+          }
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.text("7. CONFORMIDAD Y FIRMAS", 14, sigY - 8);
+
+          if (techCanvas && !isCanvasBlank(techCanvas)) {
+            try {
+              const techSigData = techCanvas.toDataURL('image/png');
+              doc.addImage(techSigData, 'PNG', 14, sigY, 60, 25);
+            } catch (err) {}
+          }
+          doc.setDrawColor(200, 200, 200);
+          doc.line(14, sigY + 26, 84, sigY + 26);
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.text("Firma Técnico Autorizado", 14, sigY + 30);
+
+          if (clientCanvas && !isCanvasBlank(clientCanvas)) {
+            try {
+              const clientSigData = clientCanvas.toDataURL('image/png');
+              doc.addImage(clientSigData, 'PNG', 110, sigY, 60, 25);
+            } catch (err) {}
+          }
+          doc.line(110, sigY + 26, 180, sigY + 26);
+          doc.text("Firma de Conformidad Cliente", 110, sigY + 30);
+
+          // ANEXO FOTOGRÁFICO
+          const images = document.querySelectorAll('.evidence-img');
+          if (images.length > 0) {
+            doc.addPage();
+            doc.setFillColor(3, 78, 162);
+            doc.rect(0, 0, 210, 16, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("ANEXO DE EVIDENCIAS FOTOGRÁFICAS GSPN", 14, 11);
+
+            let x = 14;
+            let y = 25;
+            let count = 0;
+
+            images.forEach((img) => {
+              try {
+                doc.addImage(img.src, 'JPEG', x, y, 55, 55);
+                x += 60;
+                count++;
+                if (count % 3 === 0) {
+                  x = 14;
+                  y += 62;
+                }
+                if (count % 12 === 0) {
+                  doc.addPage();
+                  x = 14;
+                  y = 25;
+                }
+              } catch (err) {}
+            });
+          }
+
+          doc.save(`Reporte_GSPN_Interno_${serial}.pdf`);
+
+        } else if (type === 'customer') {
+          // ==========================================
+          // 2. CONSTANCIA DE SERVICIO AL CLIENTE (Limpio, legible, profesional)
+          // ==========================================
+          
+          // HEADER CLIENTE
+          doc.setFillColor(16, 185, 129); // Emerald / Green
+          doc.rect(0, 0, 210, 28, 'F');
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(14);
+          doc.setFont("helvetica", "bold");
+          doc.text("SAMSUNG - CONSTANCIA DE SERVICIO TÉCNICO OFICIAL", 14, 12);
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "italic");
+          doc.text("Copia para el Cliente / Comprobante de Finalización de Reparación", 14, 20);
+
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          
+          // INTRODUCCIÓN CORDIAL
+          doc.setFont("helvetica", "bold");
+          doc.text("Estimado/a Cliente:", 14, 38);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(9);
+          doc.text("Nos complace confirmarle que nuestro Servicio Técnico Oficial ha concluido con éxito el diagnóstico y/o reparación de su producto Samsung. A continuación le entregamos este certificado con el resumen de las tareas realizadas y las pruebas de control de calidad superadas.", 14, 44, { maxWidth: 180 });
+
+          // RECUADRO DE DATOS CLAVE
+          doc.setDrawColor(220, 220, 220);
+          doc.setFillColor(248, 250, 252);
+          doc.rect(14, 56, 182, 38, 'FD');
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          doc.text("DETALLES DE LA SOLICITUD Y EL EQUIPO", 18, 62);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8.5);
+          doc.text(`N° de Orden de Trabajo: ${soNumber}`, 18, 68);
+          doc.text(`Línea de Producto: ${line.split(' - ')[1] || line}`, 18, 74);
+          doc.text(`Modelo del Dispositivo: ${model}`, 18, 80);
+          doc.text(`Número de Serie (S/N): ${serial}`, 18, 86);
+
+          doc.text(`Centro de Servicio: ${techCenter}`, 110, 68);
+          doc.text(`Técnico Responsable: ${techName}`, 110, 74);
+          doc.text(`Estado de Garantía: ${warranty}`, 110, 80);
+          doc.text(`Fecha del Reporte: ${new Date().toLocaleDateString()}`, 110, 86);
+
+          // VERIFICACIONES DE CALIDAD SUPERADAS (CHECKLIST EN LENGUAJE FÁCIL)
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text("PUNTOS DE CALIDAD Y SEGURIDAD REVISADOS", 14, 104);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8.5);
+          const items = checklists[line] || [];
+          let yOffset = 111;
+          items.forEach(item => {
+            const el = document.getElementById(item.id);
+            const isChecked = el ? el.checked : false;
+            if (isChecked) {
+              doc.text(`[ OK ]  ${item.label}`, 18, yOffset);
+              yOffset += 5.5;
+            }
+          });
+
+          if (yOffset === 111) {
+            doc.text("• Se han superado los protocolos de seguridad eléctrica habituales.", 18, yOffset);
+            yOffset += 5.5;
+          }
+
+          // DIAGNÓSTICO EN LENGUAJE AMIGABLE
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text("DIAGNÓSTICO Y ACCIÓN CORRECTIVA", 14, yOffset + 6);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8.5);
+          doc.text(`• Síntoma Presentado: Se revisó por "${symptomCat}".`, 14, yOffset + 12);
+          doc.text(`• Solución Aplicada: ${defectCat}.`, 14, yOffset + 17);
+          
+          doc.setFont("helvetica", "bold");
+          doc.text("Detalle de la reparación:", 14, yOffset + 24);
+          doc.setFont("helvetica", "normal");
+          doc.text(desc, 14, yOffset + 29, { maxWidth: 180 });
+
+          // RECUADRO DE RECOMENDACIONES Y GARANTÍA
+          let boxY = yOffset + 50;
+          if (boxY > 220) {
+            doc.addPage();
+            boxY = 25;
+          }
+
+          doc.setDrawColor(200, 230, 200);
+          doc.setFillColor(240, 253, 244); // Fondo verde claro
+          doc.rect(14, boxY, 182, 34, 'FD');
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          doc.setTextColor(10, 100, 50);
+          doc.text("RECOMENDACIONES DE USO & CONDICIONES DE GARANTÍA", 18, boxY + 6);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(50, 50, 50);
+          doc.text("• Garantía de Servicio: Las reparaciones fuera de garantía cuentan con 90 días de cobertura sobre el trabajo realizado.", 18, boxY + 12);
+          doc.text("• Recomendación: Asegure una tensión de red eléctrica adecuada y utilice siempre accesorios / insumos originales.", 18, boxY + 17);
+          doc.text("• Cuidado Diario: Evite obstruir las ventilaciones del equipo y mantenga filtros de agua/aire limpios regularmente.", 18, boxY + 24);
+
+          // FIRMAS
+          let sigY = boxY + 50;
+          if (sigY > 265) {
+            doc.addPage();
+            sigY = 30;
+          }
+
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.text("MUTUO ACUERDO Y RECEPCIÓN DE CONFORMIDAD", 14, sigY - 6);
+
+          const techCanvas = document.getElementById('tech-sig-canvas');
+          const clientCanvas = document.getElementById('client-sig-canvas');
+
+          if (techCanvas && !isCanvasBlank(techCanvas)) {
+            try {
+              const techSigData = techCanvas.toDataURL('image/png');
+              doc.addImage(techSigData, 'PNG', 14, sigY, 55, 22);
+            } catch (err) {}
+          }
+          doc.setDrawColor(200, 200, 200);
+          doc.line(14, sigY + 23, 80, sigY + 23);
+          doc.setFontSize(7.5);
+          doc.setFont("helvetica", "normal");
+          doc.text("Firma de Conformidad Técnico", 14, sigY + 27);
+
+          if (clientCanvas && !isCanvasBlank(clientCanvas)) {
+            try {
+              const clientSigData = clientCanvas.toDataURL('image/png');
+              doc.addImage(clientSigData, 'PNG', 115, sigY, 55, 22);
+            } catch (err) {}
+          }
+          doc.line(115, sigY + 23, 181, sigY + 23);
+          doc.text("Firma del Cliente de Conformidad", 115, sigY + 27);
+
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "italic");
+          doc.setTextColor(120, 120, 120);
+          doc.text("Gracias por elegir el servicio oficial de Samsung. Su satisfacción es nuestra prioridad.", 14, sigY + 38);
+
+          doc.save(`Constancia_Cliente_${serial}.pdf`);
+        }
+      } catch (e) {
+        alert("Error al generar PDF: " + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
